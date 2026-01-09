@@ -1,3 +1,8 @@
+import datetime
+from datetime import timedelta
+from http.client import responses
+
+from django.template.defaulttags import NowNode
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from .models import Author, Book, Member, Loan
@@ -52,3 +57,24 @@ class MemberViewSet(viewsets.ModelViewSet):
 class LoanViewSet(viewsets.ModelViewSet):
     queryset = Loan.objects.all()
     serializer_class = LoanSerializer
+
+    @action(detail=True, methods=["post"])
+    def extend_due_date(self, request, pk=None):
+
+        days_to_extend = request.data.get("additional_days")
+
+        try:
+            loan = self.get_object()
+        except Loan.DoesNotExist:
+            return Response({'error': 'Active loan does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        due_date = loan.due_date
+        if due_date < datetime.datetime.now():
+            return Response({'error': 'The loan is overdue, please return the book to get a new load'})
+
+        if int(days_to_extend) < 0:
+            return Response({'error': 'The additional days should positive'})
+
+        loan.due_date = due_date + timedelta(days=days_to_extend)
+        loan.save()
+        return Response({'status': 'Loan extended successfully.', 'data': loan}, status=status.HTTP_200_OK)
