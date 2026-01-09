@@ -8,4 +8,3 @@ print(list_comprehension_below_10)
 list_comprehension_below_10 = filter(lambda x: x < 10, rand_list)
 
 print(list(list_comprehension_below_10))
-
